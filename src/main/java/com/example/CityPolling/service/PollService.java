@@ -14,14 +14,14 @@ public class PollService {
     }
 
     public List<Poll> getPollsByCity(String city) {
-        return pollRepository.findByCity(city);
+        return pollRepository.findByCityIgnoreCase(city);
     }
 
     public Poll createPoll(Poll poll) {
         return pollRepository.save(poll);
     }
 
-    public Poll getPollById(Long id) {
-        return pollRepository.findById(id).orElse(null);
-    }
+//    public Poll getPollById(Long id) {
+//        return pollRepository.findById(id).orElse(null);
+//    }
 }

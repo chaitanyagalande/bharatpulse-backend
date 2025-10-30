@@ -2,23 +2,42 @@ package com.example.CityPolling.service;
 
 import com.example.CityPolling.model.User;
 import com.example.CityPolling.repository.UserRepository;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public User createUser(User user) {
+    public User register(User user) {
+        String raw = user.getPassword();
+        String hashed = passwordEncoder.encode(raw);
+        user.setPassword(hashed);
+        if(user.getRole() == null) user.setRole("USER");
         return userRepository.save(user);
     }
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+    // Needed when login needs to be done
+    public boolean validateCredentials(String email, String rawPassword) {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if(userOpt.isEmpty()) return false;
+        String storedHash = userOpt.get().getPassword();
+        return passwordEncoder.matches(rawPassword, storedHash);
+    }
+
+//    public List<User> getAllUsers() {
+//        return userRepository.findAll();
+//    }
+
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 }
