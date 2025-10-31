@@ -2,7 +2,6 @@ package com.example.CityPolling.controller;
 
 import com.example.CityPolling.model.Poll;
 import com.example.CityPolling.model.User;
-import com.example.CityPolling.repository.UserRepository;
 import com.example.CityPolling.service.PollService;
 import com.example.CityPolling.service.UserService;
 import org.springframework.http.ResponseEntity;
