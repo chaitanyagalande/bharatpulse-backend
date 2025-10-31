@@ -4,6 +4,7 @@ import com.example.CityPolling.model.Poll;
 import com.example.CityPolling.repository.PollRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class PollService {
@@ -19,6 +20,14 @@ public class PollService {
 
     public Poll createPoll(Poll poll) {
         return pollRepository.save(poll);
+    }
+
+    public Optional<Poll> findById(Long pollId) {
+        return pollRepository.findById(pollId);
+    }
+
+    public void deleteById(Long pollId) {
+        pollRepository.deleteById(pollId);
     }
 
 //    public Poll getPollById(Long id) {
