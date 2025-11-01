@@ -19,9 +19,6 @@ public class UserService {
     }
 
     public User register(RegisterRequest req) {
-        if(userRepository.existsByEmail(req.getEmail())) {
-            return null; // signal to controller that email is already used
-        }
         User user = new User();
         user.setUsername(req.getUsername());
         user.setEmail(req.getEmail());
@@ -42,7 +39,16 @@ public class UserService {
 
 //    public List<User> getAllUsers() {
 //        return userRepository.findAll();
+
 //    }
+
+    public boolean existsByUsername(String username) {
+        return userRepository.existsByUsername(username);
+    }
+
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
 
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);

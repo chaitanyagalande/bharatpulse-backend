@@ -30,10 +30,13 @@ public class UserController {
     // Register endpoint
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
-        User savedUser = userService.register(req);
-        if(savedUser == null) {
+        if(userService.existsByUsername(req.getUsername())) {
+            return ResponseEntity.badRequest().body("Username already in use.");
+        }
+        if(userService.existsByEmail(req.getEmail())) {
             return ResponseEntity.badRequest().body("Email already in use.");
         }
+        User savedUser = userService.register(req);
         savedUser.setPassword(null);
         return ResponseEntity.ok(savedUser);
     }
