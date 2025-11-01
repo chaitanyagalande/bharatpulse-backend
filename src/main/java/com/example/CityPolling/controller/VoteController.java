@@ -2,6 +2,8 @@ package com.example.CityPolling.controller;
 
 import com.example.CityPolling.model.Vote;
 import com.example.CityPolling.service.VoteService;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -17,12 +19,15 @@ public class VoteController {
     }
 
     @PostMapping("/cast")
-    public String castVote(@RequestBody Vote vote) {
-        return voteService.castVote(vote);
+    public ResponseEntity<?> castVote(@RequestBody Vote vote, Authentication authentication) {
+        String email = authentication.getName();
+        String message = voteService.castVote(vote, email);
+        return ResponseEntity.ok(message);
     }
 
     @GetMapping("/results/{pollId}")
-    public Map<String, Long> getPollResults(@PathVariable Long pollId) {
-        return voteService.getPollResults(pollId);
+    public ResponseEntity<?> getPollResults(@PathVariable Long pollId) {
+        Map<String, Long> results = voteService.getPollResults(pollId);
+        return ResponseEntity.ok(results);
     }
 }

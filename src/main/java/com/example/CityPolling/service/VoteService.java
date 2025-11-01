@@ -1,5 +1,6 @@
 package com.example.CityPolling.service;
 
+import com.example.CityPolling.model.User;
 import com.example.CityPolling.model.Vote;
 import com.example.CityPolling.model.Poll;
 import com.example.CityPolling.repository.VoteRepository;
@@ -15,29 +16,39 @@ public class VoteService {
 
     private final VoteRepository voteRepository;
     private final PollRepository pollRepository;
+    private final UserService userService;
 
-    public VoteService(VoteRepository voteRepository, PollRepository pollRepository) {
+    public VoteService(VoteRepository voteRepository, PollRepository pollRepository, UserService userService) {
         this.voteRepository = voteRepository;
         this.pollRepository = pollRepository;
+        this.userService = userService;
     }
 
     // ✅ Cast a vote
-    public String castVote(Vote vote) {
-        // Prevent double voting
-        if (voteRepository.existsByPollIdAndUserId(vote.getPollId(), vote.getUserId())) {
-            return "User has already voted on this poll.";
+    public String castVote(Vote voteRequest, String email) {
+        User user = userService.findByEmail(email); // Authenticated user
+        Poll poll = pollRepository.findById(voteRequest.getPollId())
+                .orElseThrow(() -> new IllegalArgumentException("Poll not found."));
+
+        // Prevent users from voting on polls outside their city even though users only see polls from their city (Just for safety)
+        if (!poll.getCity().equalsIgnoreCase(user.getCity())) {
+            throw new IllegalArgumentException("You can only vote on polls from your own city.");
         }
 
-        // Check poll exists
-        Poll poll = pollRepository.findById(vote.getPollId()).orElse(null);
-        if (poll == null) {
-            return "Poll not found.";
+        // Prevent double voting
+        if (voteRepository.existsByPollIdAndUserId(poll.getId(), user.getId())) {
+            throw new IllegalArgumentException("User has already voted on this poll.");
         }
 
         // Validate selected option
-        if (vote.getSelectedOption() < 1 || vote.getSelectedOption() > 4) {
-            return "Invalid option number.";
+        if (voteRequest.getSelectedOption() < 1 || voteRequest.getSelectedOption() > 4) {
+            throw new IllegalArgumentException("Invalid option number.");
         }
+
+        Vote vote = new Vote();
+        vote.setPollId(poll.getId());
+        vote.setUserId(user.getId());
+        vote.setSelectedOption(voteRequest.getSelectedOption());
 
         voteRepository.save(vote);
         return "Vote recorded successfully!";
@@ -45,8 +56,8 @@ public class VoteService {
 
     // 📊 Get vote results for a poll
     public Map<String, Long> getPollResults(Long pollId) {
-        Poll poll = pollRepository.findById(pollId).orElse(null);
-        if (poll == null) return null;
+        Poll poll = pollRepository.findById(pollId)
+                .orElseThrow(() -> new IllegalArgumentException("Poll not found"));
 
         Map<String, Long> results = new HashMap<>();
         results.put(poll.getOptionOne(), 0L);
