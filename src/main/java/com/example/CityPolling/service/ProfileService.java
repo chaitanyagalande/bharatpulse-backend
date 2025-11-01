@@ -49,10 +49,10 @@ public class ProfileService {
     public boolean updateUsername(UsernameUpdateRequest request, String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found in DB"));
-        if (userRepository.existsByName(request.getNewUsername())) {
+        if (userRepository.existsByUsername(request.getNewUsername())) {
             return false; // username already taken
         }
-        user.setName(request.getNewUsername());
+        user.setUsername(request.getNewUsername());
         userRepository.save(user);
         return true;
     }

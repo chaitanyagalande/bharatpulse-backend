@@ -30,21 +30,12 @@ public class UserController {
     // Register endpoint
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
-        if(userRepository.existsByEmail(req.getEmail())) {
+        User savedUser = userService.register(req);
+        if(savedUser == null) {
             return ResponseEntity.badRequest().body("Email already in use.");
         }
-
-        User user = new User();
-        user.setName(req.getName());
-        user.setEmail(req.getEmail());
-        user.setPassword(req.getPassword()); // raw - will be encoded in service
-        user.setCity(req.getCity());
-        user.setRole("USER");
-
-        User saved = userService.register(user);
-        // hide password before returning
-        saved.setPassword(null);
-        return ResponseEntity.ok(saved);
+        savedUser.setPassword(null);
+        return ResponseEntity.ok(savedUser);
     }
 
     // Login endpoint

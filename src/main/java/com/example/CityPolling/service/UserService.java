@@ -1,5 +1,6 @@
 package com.example.CityPolling.service;
 
+import com.example.CityPolling.dto.RegisterRequest;
 import com.example.CityPolling.model.User;
 import com.example.CityPolling.repository.UserRepository;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -17,11 +18,17 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public User register(User user) {
-        String raw = user.getPassword();
-        String hashed = passwordEncoder.encode(raw);
+    public User register(RegisterRequest req) {
+        if(userRepository.existsByEmail(req.getEmail())) {
+            return null; // signal to controller that email is already used
+        }
+        User user = new User();
+        user.setUsername(req.getUsername());
+        user.setEmail(req.getEmail());
+        String hashed = passwordEncoder.encode(req.getPassword());
         user.setPassword(hashed);
-        if(user.getRole() == null) user.setRole("USER");
+        user.setCity(req.getCity());
+        user.setRole("USER");
         return userRepository.save(user);
     }
 
