@@ -5,12 +5,9 @@ import com.example.CityPolling.dto.PasswordUpdateRequest;
 import com.example.CityPolling.dto.UsernameUpdateRequest;
 import com.example.CityPolling.model.User;
 import com.example.CityPolling.service.ProfileService;
-import com.example.CityPolling.service.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/profile")
@@ -24,24 +21,39 @@ public class ProfileController {
     // Get current logged-in user's info
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
-        return profileService.getCurrentUser(authentication);
+        String email = authentication.getName();
+        User user = profileService.getCurrentUser(email);
+        // No need to check if user is present as this is an authentication request and user is present obviously
+        return ResponseEntity.ok(user);
     }
 
     // Update logged-in user's city
     @PutMapping("/update-city")
     public ResponseEntity<?> updateCity(@RequestBody CityRequest req, Authentication authentication) {
-        return profileService.updateCity(req, authentication);
+        String email = authentication.getName();
+        User updatedUser = profileService.updateCity(req, email);
+        return ResponseEntity.ok("City updated successfully to: " + updatedUser.getCity());
     }
 
     // Change password after logging in
     @PatchMapping("/update-password")
     public ResponseEntity<?> updatePassword(@RequestBody PasswordUpdateRequest req, Authentication authentication) {
-        return profileService.updatePassword(req, authentication);
+        String email = authentication.getName();
+        boolean updated = profileService.updatePassword(req, email);
+        if(!updated) {
+            return ResponseEntity.status(400).body("Old password is incorrect.");
+        }
+        return ResponseEntity.ok("Password updated successfully!");
     }
 
     // Change username after logging in
     @PatchMapping("/update-username")
     public ResponseEntity<?> updateUsername(@RequestBody UsernameUpdateRequest req, Authentication authentication) {
-        return profileService.updateUsername(req, authentication);
+        String email = authentication.getName();
+        boolean updated = profileService.updateUsername(req, email);
+        if(!updated) {
+            return ResponseEntity.status(400).body("Username already taken.");
+        }
+        return ResponseEntity.ok("Username updated successfully!");
     }
 }
