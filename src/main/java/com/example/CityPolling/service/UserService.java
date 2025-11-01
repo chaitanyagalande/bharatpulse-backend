@@ -42,8 +42,10 @@ public class UserService {
 
     // Needed when login needs to be done
     public LoginResponse login(LoginRequest req) {
-        User user = userRepository.findByEmail(req.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password."));
+        User user = userRepository.findByEmail(req.getEmail());
+        if(user == null) {
+            throw new IllegalArgumentException("Invalid email or password.");
+        }
 
         if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
             throw new IllegalArgumentException("Invalid email or password.");
@@ -61,7 +63,7 @@ public class UserService {
         return userRepository.existsByEmail(email);
     }
 
-    public Optional<User> findByEmail(String email) {
+    public User findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
 

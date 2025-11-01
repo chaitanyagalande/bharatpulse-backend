@@ -19,15 +19,19 @@ public class ProfileService {
     }
 
     public User getCurrentUser(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found in DB"));
+        User user = userRepository.findByEmail(email);
+        if(user == null) {
+            throw new IllegalStateException("Authenticated user not found in DB");
+        }
         user.setPassword(null); // hide password before returning
         return user;
     }
 
     public User updateCity(CityRequest request, String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found in DB"));
+        User user = userRepository.findByEmail(email);
+        if(user == null) {
+            throw new IllegalStateException("Authenticated user not found in DB");
+        }
         user.setCity(request.getCity());
         userRepository.save(user);
         user.setPassword(null); // hide password before returning
@@ -35,8 +39,10 @@ public class ProfileService {
     }
 
     public boolean updatePassword(PasswordUpdateRequest req, String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found in DB"));
+        User user = userRepository.findByEmail(email);
+        if(user == null) {
+            throw new IllegalStateException("Authenticated user not found in DB");
+        }
         if (!passwordEncoder.matches(req.getOldPassword(), user.getPassword())) {
             return false; // incorrect old password
         }
@@ -47,8 +53,10 @@ public class ProfileService {
     }
 
     public boolean updateUsername(UsernameUpdateRequest request, String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalStateException("Authenticated user not found in DB"));
+        User user = userRepository.findByEmail(email);
+        if(user == null) {
+            throw new IllegalStateException("Authenticated user not found in DB");
+        }
         if (userRepository.existsByUsername(request.getNewUsername())) {
             return false; // username already taken
         }
@@ -56,5 +64,4 @@ public class ProfileService {
         userRepository.save(user);
         return true;
     }
-
 }

@@ -40,8 +40,8 @@ public class JwtFilter extends OncePerRequestFilter {
         }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            var user = userService.findByEmail(email);
-            if (user.isPresent()) {
+            boolean userExists = userService.existsByEmail(email);
+            if (userExists) {
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(email, null, null);
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
