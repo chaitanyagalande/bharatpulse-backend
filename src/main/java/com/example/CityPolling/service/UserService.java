@@ -1,8 +1,11 @@
 package com.example.CityPolling.service;
 
+import com.example.CityPolling.dto.LoginRequest;
+import com.example.CityPolling.dto.LoginResponse;
 import com.example.CityPolling.dto.RegisterRequest;
 import com.example.CityPolling.model.User;
 import com.example.CityPolling.repository.UserRepository;
+import com.example.CityPolling.security.JwtUtil;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -12,13 +15,21 @@ import java.util.Optional;
 public class UserService {
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
-    public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
     }
 
     public User register(RegisterRequest req) {
+        if (userRepository.existsByUsername(req.getUsername())) {
+            throw new IllegalArgumentException("Username already in use");
+        }
+        if (userRepository.existsByEmail(req.getEmail())) {
+            throw new IllegalArgumentException("Email already in use");
+        }
         User user = new User();
         user.setUsername(req.getUsername());
         user.setEmail(req.getEmail());
@@ -30,17 +41,17 @@ public class UserService {
     }
 
     // Needed when login needs to be done
-    public boolean validateCredentials(String email, String rawPassword) {
-        Optional<User> userOpt = userRepository.findByEmail(email);
-        if(userOpt.isEmpty()) return false;
-        String storedHash = userOpt.get().getPassword();
-        return passwordEncoder.matches(rawPassword, storedHash);
+    public LoginResponse login(LoginRequest req) {
+        User user = userRepository.findByEmail(req.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password."));
+
+        if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Invalid email or password.");
+        }
+        // If password is correct and matches stored password
+        String token = jwtUtil.generateToken(user.getEmail());
+        return new LoginResponse(token, user.getEmail(), user.getId());
     }
-
-//    public List<User> getAllUsers() {
-//        return userRepository.findAll();
-
-//    }
 
     public boolean existsByUsername(String username) {
         return userRepository.existsByUsername(username);
