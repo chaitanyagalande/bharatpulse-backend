@@ -84,16 +84,4 @@ public class VoteService {
             case 4 -> poll.setOptionFourVotes(poll.getOptionFourVotes() + delta);
         }
     }
-
-    public Map<String, Long> getPollResults(Long pollId) {
-        Poll poll = pollRepository.findById(pollId)
-                .orElseThrow(() -> new IllegalArgumentException("Poll not found"));
-
-        Map<String, Long> results = new HashMap<>();
-        results.put(poll.getOptionOne(), poll.getOptionOneVotes());
-        results.put(poll.getOptionTwo(), poll.getOptionTwoVotes());
-        if (poll.getOptionThree() != null) results.put(poll.getOptionThree(), poll.getOptionThreeVotes());
-        if (poll.getOptionFour() != null) results.put(poll.getOptionFour(), poll.getOptionFourVotes());
-        return results;
-    }
 }

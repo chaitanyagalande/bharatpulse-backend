@@ -12,4 +12,6 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
 
     @Query("SELECT COUNT(v) FROM Vote v WHERE v.pollId = :pollId")
     long countVotesForPoll(@Param("pollId") Long id);
+
+    List<Poll> findByCreatedBy(Long createdBy);
 }

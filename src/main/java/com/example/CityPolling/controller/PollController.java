@@ -1,7 +1,7 @@
 package com.example.CityPolling.controller;
 
+import com.example.CityPolling.dto.PollWithVoteResponse;
 import com.example.CityPolling.model.Poll;
-import com.example.CityPolling.model.User;
 import com.example.CityPolling.service.PollService;
 import com.example.CityPolling.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -36,9 +36,25 @@ public class PollController {
     @GetMapping("/feed")
     public ResponseEntity<?> getPollFeed(Authentication authentication, @RequestParam(defaultValue = "latest") String sortBy) {
         String email = authentication.getName();
-        List<Poll> polls = pollService.getPollFeed(email, sortBy);
+        List<PollWithVoteResponse> polls = pollService.getPollFeed(email, sortBy);
         return ResponseEntity.ok(polls);
     }
+
+    // Show all polls created by logged-in user.
+    @GetMapping("/my-polls")
+    public ResponseEntity<?> getMyPolls(Authentication authentication, @RequestParam(defaultValue = "latest") String sortBy) {
+        String email = authentication.getName();
+        List<PollWithVoteResponse> myPolls = pollService.getMyPolls(email, sortBy);
+        return ResponseEntity.ok(myPolls);
+    }
+
+    @GetMapping("/my-votes")
+    public ResponseEntity<?> getMyVotedPolls(Authentication authentication, @RequestParam(defaultValue = "latestvoted") String sortBy) {
+        String email = authentication.getName();
+        List<PollWithVoteResponse> votedPolls = pollService.getMyVotedPolls(email, sortBy);
+        return ResponseEntity.ok(votedPolls);
+    }
+
 
     // Edit a poll (Only the creator can)
     @PutMapping("/edit/{pollId}")

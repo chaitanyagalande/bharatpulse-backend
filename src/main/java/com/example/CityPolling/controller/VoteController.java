@@ -24,10 +24,4 @@ public class VoteController {
         String message = voteService.castVote(vote, email);
         return ResponseEntity.ok(message);
     }
-
-    @GetMapping("/results/{pollId}")
-    public ResponseEntity<?> getPollResults(@PathVariable Long pollId) {
-        Map<String, Long> results = voteService.getPollResults(pollId);
-        return ResponseEntity.ok(results);
-    }
 }
