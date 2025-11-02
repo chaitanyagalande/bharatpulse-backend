@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 public interface VoteRepository extends JpaRepository<Vote, Long> {
 
@@ -17,4 +17,6 @@ public interface VoteRepository extends JpaRepository<Vote, Long> {
     // ✅ New: Group by selectedOption to count votes efficiently
     @Query("SELECT v.selectedOption, COUNT(v) FROM Vote v WHERE v.pollId = :pollId GROUP BY v.selectedOption")
     List<Object[]> countVotesByPollId(@Param("pollId") Long pollId);
+
+    Optional<Vote> findByPollIdAndUserId(Long id, Long id1);
 }

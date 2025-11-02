@@ -7,9 +7,11 @@ import com.example.CityPolling.repository.VoteRepository;
 import com.example.CityPolling.repository.PollRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class VoteService {
@@ -24,7 +26,7 @@ public class VoteService {
         this.userService = userService;
     }
 
-    // ✅ Cast a vote
+    // Cast a vote
     public String castVote(Vote voteRequest, String email) {
         User user = userService.findByEmail(email); // Authenticated user
         Poll poll = pollRepository.findById(voteRequest.getPollId())
@@ -35,26 +37,39 @@ public class VoteService {
             throw new IllegalArgumentException("You can only vote on polls from your own city.");
         }
 
-        // Prevent double voting
-        if (voteRepository.existsByPollIdAndUserId(poll.getId(), user.getId())) {
-            throw new IllegalArgumentException("User has already voted on this poll.");
-        }
-
         // Validate selected option
         if (voteRequest.getSelectedOption() < 1 || voteRequest.getSelectedOption() > 4) {
             throw new IllegalArgumentException("Invalid option number.");
         }
 
-        Vote vote = new Vote();
-        vote.setPollId(poll.getId());
-        vote.setUserId(user.getId());
-        vote.setSelectedOption(voteRequest.getSelectedOption());
+        // Check if user has already voted
+        Optional<Vote> existingVoteOpt = voteRepository.findByPollIdAndUserId(poll.getId(), user.getId());
 
-        voteRepository.save(vote);
+        if (existingVoteOpt.isPresent()) {
+            // User already voted — update existing vote
+            Vote existingVote = existingVoteOpt.get();
+
+            // If user clicks same option again — ignore
+            if (existingVote.getSelectedOption().equals(voteRequest.getSelectedOption())) {
+                return "You already voted for this option.";
+            }
+            existingVote.setSelectedOption(voteRequest.getSelectedOption());
+            existingVote.setVotedAt(LocalDateTime.now());
+            voteRepository.save(existingVote);
+            return "Vote updated successfully!";
+        }
+
+        // User has not voted before — create new vote
+        Vote newVote = new Vote();
+        newVote.setPollId(poll.getId());
+        newVote.setUserId(user.getId());
+        newVote.setSelectedOption(voteRequest.getSelectedOption());
+        voteRepository.save(newVote);
+
         return "Vote recorded successfully!";
     }
 
-    // 📊 Get vote results for a poll
+    // Get vote results for a poll
     public Map<String, Long> getPollResults(Long pollId) {
         Poll poll = pollRepository.findById(pollId)
                 .orElseThrow(() -> new IllegalArgumentException("Poll not found"));
