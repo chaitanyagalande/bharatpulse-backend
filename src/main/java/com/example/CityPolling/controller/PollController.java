@@ -29,11 +29,14 @@ public class PollController {
         return ResponseEntity.ok(savedPoll);
     }
 
-    // Get all polls for the logged-in user's city
-    @GetMapping("/mycity")
-    public ResponseEntity<?> getPollsForCity(Authentication authentication) {
+    // Get all polls for the logged-in user's city, with sorting
+    // GET /api/polls/feed?sortBy=latest
+    // GET /api/polls/feed?sortBy=oldest
+    // GET /api/polls/feed?sortBy=mostVoted
+    @GetMapping("/feed")
+    public ResponseEntity<?> getPollFeed(Authentication authentication, @RequestParam(defaultValue = "latest") String sortBy) {
         String email = authentication.getName();
-        List<Poll> polls = pollService.getPollsByCity(email);
+        List<Poll> polls = pollService.getPollFeed(email, sortBy);
         return ResponseEntity.ok(polls);
     }
 

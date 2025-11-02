@@ -4,8 +4,9 @@ import com.example.CityPolling.model.Poll;
 import com.example.CityPolling.model.User;
 import com.example.CityPolling.repository.PollRepository;
 import org.springframework.stereotype.Service;
+
+import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class PollService {
@@ -24,9 +25,26 @@ public class PollService {
         return pollRepository.save(poll);
     }
 
-    public List<Poll> getPollsByCity(String email) {
+    public List<Poll> getPollFeed(String email, String sortBy) {
         User user = userService.findByEmail(email);
-        return pollRepository.findByCityIgnoreCase(user.getCity());
+        String city = user.getCity();
+        List<Poll> polls = pollRepository.findByCityIgnoreCase(city);
+        return switch(sortBy.toLowerCase()) {
+            case "oldest" -> polls.stream()
+                    .sorted(Comparator.comparing(Poll::getCreatedAt))
+                    .toList();
+
+            case "mostvoted" -> polls.stream()
+                    .sorted((p1, p2) -> Long.compare(
+                            pollRepository.countVotesForPoll(p2.getId()),
+                            pollRepository.countVotesForPoll(p1.getId())
+                    ))
+                    .toList();
+
+            default -> polls.stream() // "latest"
+                    .sorted(Comparator.comparing(Poll::getCreatedAt).reversed())
+                    .toList();
+        };
     }
 
     public Poll editPoll(Long pollId, Poll updatedPoll, String email) {
