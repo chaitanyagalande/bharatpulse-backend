@@ -56,4 +56,12 @@ public class ProfileController {
         }
         return ResponseEntity.ok("Username updated successfully!");
     }
+
+    // Toggle Mode between LOCAL and EXPLORER
+    @PatchMapping("/toggle-mode")
+    public ResponseEntity<?> toggleMode(Authentication authentication) {
+        String email = authentication.getName();
+        String mode = profileService.toggleMode(email);
+        return ResponseEntity.ok("Mode updated to: " + mode);
+    }
 }

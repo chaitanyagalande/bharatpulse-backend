@@ -64,4 +64,16 @@ public class ProfileService {
         userRepository.save(user);
         return true;
     }
+
+    public String toggleMode(String email) {
+        User user = userRepository.findByEmail(email);
+        String currentMode = user.getMode();
+        if ("LOCAL".equalsIgnoreCase(currentMode)) {
+            user.setMode("EXPLORE");
+        } else {
+            user.setMode("LOCAL");
+        }
+        userRepository.save(user); // ✅ persist change
+        return user.getMode();
+    }
 }
