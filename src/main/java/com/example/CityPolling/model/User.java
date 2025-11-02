@@ -28,4 +28,7 @@ public class User {
 
     @Column(name = "role", length = 50)
     private String role = "USER";
+
+    @Column(name = "mode", length = 20, nullable = false)
+    private String mode = "LOCAL"; // can be "LOCAL" or "EXPLORE"
 }

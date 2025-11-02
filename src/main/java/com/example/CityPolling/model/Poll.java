@@ -42,4 +42,17 @@ public class Poll {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    // New fields for real-time vote counts
+    @Column(name = "option_one_votes", nullable = false)
+    private Long optionOneVotes = 0L;
+
+    @Column(name = "option_two_votes", nullable = false)
+    private Long optionTwoVotes = 0L;
+
+    @Column(name = "option_three_votes")
+    private Long optionThreeVotes = 0L;
+
+    @Column(name = "option_four_votes")
+    private Long optionFourVotes = 0L;
 }

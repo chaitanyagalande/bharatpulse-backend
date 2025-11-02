@@ -26,72 +26,74 @@ public class VoteService {
         this.userService = userService;
     }
 
-    // Cast a vote
     public String castVote(Vote voteRequest, String email) {
-        User user = userService.findByEmail(email); // Authenticated user
+        User user = userService.findByEmail(email);
         Poll poll = pollRepository.findById(voteRequest.getPollId())
                 .orElseThrow(() -> new IllegalArgumentException("Poll not found."));
 
-        // Prevent users from voting on polls outside their city even though users only see polls from their city (Just for safety)
         if (!poll.getCity().equalsIgnoreCase(user.getCity())) {
             throw new IllegalArgumentException("You can only vote on polls from your own city.");
         }
 
-        // Validate selected option
-        if (voteRequest.getSelectedOption() < 1 || voteRequest.getSelectedOption() > 4) {
+        int selectedOption = voteRequest.getSelectedOption();
+        if (selectedOption < 1 || selectedOption > 4) {
             throw new IllegalArgumentException("Invalid option number.");
         }
 
-        // Check if user has already voted
         Optional<Vote> existingVoteOpt = voteRepository.findByPollIdAndUserId(poll.getId(), user.getId());
 
         if (existingVoteOpt.isPresent()) {
-            // User already voted — update existing vote
             Vote existingVote = existingVoteOpt.get();
+            int oldOption = existingVote.getSelectedOption();
 
-            // If user clicks same option again — ignore
-            if (existingVote.getSelectedOption().equals(voteRequest.getSelectedOption())) {
+            // ✅ If same option clicked again, ignore
+            if (oldOption == selectedOption) {
                 return "You already voted for this option.";
             }
-            existingVote.setSelectedOption(voteRequest.getSelectedOption());
+
+            // ✅ Adjust counts: decrement old, increment new
+            adjustVoteCounts(poll, oldOption, -1);
+            adjustVoteCounts(poll, selectedOption, +1);
+
+            existingVote.setSelectedOption(selectedOption);
             existingVote.setVotedAt(LocalDateTime.now());
             voteRepository.save(existingVote);
+            pollRepository.save(poll);
+
             return "Vote updated successfully!";
         }
 
-        // User has not voted before — create new vote
+        // ✅ First-time vote
+        adjustVoteCounts(poll, selectedOption, +1);
+
         Vote newVote = new Vote();
         newVote.setPollId(poll.getId());
         newVote.setUserId(user.getId());
-        newVote.setSelectedOption(voteRequest.getSelectedOption());
+        newVote.setSelectedOption(selectedOption);
         voteRepository.save(newVote);
+        pollRepository.save(poll);
 
         return "Vote recorded successfully!";
     }
 
-    // Get vote results for a poll
+    private void adjustVoteCounts(Poll poll, int option, int delta) {
+        switch (option) {
+            case 1 -> poll.setOptionOneVotes(poll.getOptionOneVotes() + delta);
+            case 2 -> poll.setOptionTwoVotes(poll.getOptionTwoVotes() + delta);
+            case 3 -> poll.setOptionThreeVotes(poll.getOptionThreeVotes() + delta);
+            case 4 -> poll.setOptionFourVotes(poll.getOptionFourVotes() + delta);
+        }
+    }
+
     public Map<String, Long> getPollResults(Long pollId) {
         Poll poll = pollRepository.findById(pollId)
                 .orElseThrow(() -> new IllegalArgumentException("Poll not found"));
 
         Map<String, Long> results = new HashMap<>();
-        results.put(poll.getOptionOne(), 0L);
-        results.put(poll.getOptionTwo(), 0L);
-        if (poll.getOptionThree() != null) results.put(poll.getOptionThree(), 0L);
-        if (poll.getOptionFour() != null) results.put(poll.getOptionFour(), 0L);
-
-        List<Object[]> counts = voteRepository.countVotesByPollId(pollId);
-        for (Object[] row : counts) {
-            Integer option = (Integer) row[0];
-            Long count = (Long) row[1];
-            switch (option) {
-                case 1 -> results.put(poll.getOptionOne(), count);
-                case 2 -> results.put(poll.getOptionTwo(), count);
-                case 3 -> results.put(poll.getOptionThree(), count);
-                case 4 -> results.put(poll.getOptionFour(), count);
-            }
-        }
-
+        results.put(poll.getOptionOne(), poll.getOptionOneVotes());
+        results.put(poll.getOptionTwo(), poll.getOptionTwoVotes());
+        if (poll.getOptionThree() != null) results.put(poll.getOptionThree(), poll.getOptionThreeVotes());
+        if (poll.getOptionFour() != null) results.put(poll.getOptionFour(), poll.getOptionFourVotes());
         return results;
     }
 }
