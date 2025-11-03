@@ -9,8 +9,6 @@ import com.example.CityPolling.security.JwtUtil;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 @Service
 public class UserService {
     private final UserRepository userRepository;
@@ -55,10 +53,6 @@ public class UserService {
         return new LoginResponse(token, user.getEmail(), user.getId());
     }
 
-    public boolean existsByUsername(String username) {
-        return userRepository.existsByUsername(username);
-    }
-
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
     }
@@ -67,7 +61,9 @@ public class UserService {
         return userRepository.findByEmail(email);
     }
 
-    public void save(User user) {
-        userRepository.save(user);
+    public User findById(Long createdBy) {
+        return userRepository.findById(createdBy)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + createdBy));
     }
+
 }

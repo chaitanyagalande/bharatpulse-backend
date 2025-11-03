@@ -1,5 +1,7 @@
 package com.example.CityPolling.service;
 
+import com.example.CityPolling.dto.CreatedByResponse;
+import com.example.CityPolling.dto.PollResponse;
 import com.example.CityPolling.dto.PollWithVoteResponse;
 import com.example.CityPolling.model.Poll;
 import com.example.CityPolling.model.User;
@@ -8,10 +10,7 @@ import com.example.CityPolling.repository.PollRepository;
 import com.example.CityPolling.repository.VoteRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,31 +25,52 @@ public class PollService {
         this.voteRepository = voteRepository;
     }
 
-    // ✅ Create poll — unchanged
+    // ✅ Create poll
     public Poll createPoll(Poll poll, String email) {
         User user = userService.findByEmail(email);
         poll.setCreatedBy(user.getId());
-        poll.setCity(user.getCity()); // use same city as user
+        poll.setCity(user.getCity());
         return pollRepository.save(poll);
     }
 
-    // Get feed of polls in own city
-    // If explore mode, just return same polls — frontend can show results with them
-    // If local mode, frontend hides results (backend behavior same)
+    // ✅ Build PollResponse (core helper)
+    private PollResponse buildPollResponse(Poll poll) {
+        User creator = userService.findById(poll.getCreatedBy());
+        CreatedByResponse createdBy = new CreatedByResponse(creator.getId(), creator.getUsername());
+
+        return new PollResponse(
+                poll.getId(),
+                poll.getQuestion(),
+                poll.getOptionOne(),
+                poll.getOptionTwo(),
+                poll.getOptionThree(),
+                poll.getOptionFour(),
+                poll.getCity(),
+                createdBy,
+                poll.getCreatedAt(),
+                poll.getOptionOneVotes(),
+                poll.getOptionTwoVotes(),
+                poll.getOptionThreeVotes(),
+                poll.getOptionFourVotes()
+        );
+    }
+
+    // ✅ Feed of polls in user's city
     public List<PollWithVoteResponse> getPollFeed(String email, String sortBy) {
         User user = userService.findByEmail(email);
         String city = user.getCity();
 
         List<Poll> polls = pollRepository.findByCityIgnoreCase(city);
         List<Vote> userVotes = voteRepository.findByUserId(user.getId());
+
         Map<Long, Vote> voteMap = userVotes.stream()
                 .collect(Collectors.toMap(Vote::getPollId, v -> v));
 
         List<PollWithVoteResponse> responses = polls.stream()
-                .map(poll -> {
-                    Vote v = voteMap.get(poll.getId());
+                .map(p -> {
+                    Vote v = voteMap.get(p.getId());
                     return new PollWithVoteResponse(
-                            poll,
+                            buildPollResponse(p),
                             v != null ? v.getSelectedOption() : null,
                             v != null ? v.getVotedAt() : null
                     );
@@ -60,6 +80,7 @@ public class PollService {
         return sortPolls(responses, sortBy);
     }
 
+    // ✅ Polls created by me
     public List<PollWithVoteResponse> getMyPolls(String email, String sortBy) {
         User user = userService.findByEmail(email);
         Long userId = user.getId();
@@ -74,7 +95,7 @@ public class PollService {
                 .map(poll -> {
                     Vote v = voteMap.get(poll.getId());
                     return new PollWithVoteResponse(
-                            poll,
+                            buildPollResponse(poll),
                             v != null ? v.getSelectedOption() : null,
                             v != null ? v.getVotedAt() : null
                     );
@@ -84,7 +105,7 @@ public class PollService {
         return sortPolls(responses, sortBy);
     }
 
-
+    // ✅ Polls I have voted on
     public List<PollWithVoteResponse> getMyVotedPolls(String email, String sortBy) {
         User user = userService.findByEmail(email);
         Long userId = user.getId();
@@ -101,7 +122,7 @@ public class PollService {
                     Poll poll = pollMap.get(vote.getPollId());
                     if (poll == null) return null;
                     return new PollWithVoteResponse(
-                            poll,
+                            buildPollResponse(poll),
                             vote.getSelectedOption(),
                             vote.getVotedAt()
                     );
@@ -112,8 +133,7 @@ public class PollService {
         return sortPolls(responses, sortBy);
     }
 
-
-    // ✅ Edit poll — unchanged
+    // ✅ Edit poll
     public Poll editPoll(Long pollId, Poll updatedPoll, String email) {
         User user = userService.findByEmail(email);
         Poll poll = pollRepository.findById(pollId)
@@ -132,7 +152,7 @@ public class PollService {
         return pollRepository.save(poll);
     }
 
-    // ✅ Delete poll — unchanged
+    // ✅ Delete poll
     public void deletePoll(Long pollId, String email) {
         User user = userService.findByEmail(email);
         Poll poll = pollRepository.findById(pollId)
@@ -145,17 +165,15 @@ public class PollService {
         pollRepository.deleteById(pollId);
     }
 
-    // Utility to count votes
+    // 🧮 Utility: total votes
     private long getTotalVotes(Poll poll) {
-        long total = 0;
-        if (poll.getOptionOneVotes() != null) total += poll.getOptionOneVotes();
-        if (poll.getOptionTwoVotes() != null) total += poll.getOptionTwoVotes();
-        if (poll.getOptionThreeVotes() != null) total += poll.getOptionThreeVotes();
-        if (poll.getOptionFourVotes() != null) total += poll.getOptionFourVotes();
-        return total;
+        return Optional.ofNullable(poll.getOptionOneVotes()).orElse(0L)
+                + Optional.ofNullable(poll.getOptionTwoVotes()).orElse(0L)
+                + Optional.ofNullable(poll.getOptionThreeVotes()).orElse(0L)
+                + Optional.ofNullable(poll.getOptionFourVotes()).orElse(0L);
     }
 
-    // Utility to sort votes
+    // 📊 Sorting helper
     private List<PollWithVoteResponse> sortPolls(List<PollWithVoteResponse> responses, String sortBy) {
         Comparator<PollWithVoteResponse> comparator;
 
@@ -163,7 +181,7 @@ public class PollService {
             case "oldest" ->
                     comparator = Comparator.comparing(r -> r.getPoll().getCreatedAt());
             case "mostvoted" ->
-                    comparator = Comparator.comparing((PollWithVoteResponse r) -> getTotalVotes(r.getPoll())).reversed();
+                    comparator = Comparator.comparing((PollWithVoteResponse r) -> getTotalVotes(toPoll(r))).reversed();
             case "latestvoted" ->
                     comparator = Comparator.comparing(PollWithVoteResponse::getVotedAt, Comparator.nullsLast(Comparator.reverseOrder()));
             default ->
@@ -173,5 +191,15 @@ public class PollService {
         return responses.stream()
                 .sorted(comparator)
                 .toList();
+    }
+
+    private Poll toPoll(PollWithVoteResponse r) {
+        PollResponse pr = r.getPoll();
+        Poll p = new Poll();
+        p.setOptionOneVotes(pr.getOptionOneVotes());
+        p.setOptionTwoVotes(pr.getOptionTwoVotes());
+        p.setOptionThreeVotes(pr.getOptionThreeVotes());
+        p.setOptionFourVotes(pr.getOptionFourVotes());
+        return p;
     }
 }
