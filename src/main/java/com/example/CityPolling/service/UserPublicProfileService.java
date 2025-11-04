@@ -80,7 +80,7 @@ public class UserPublicProfileService {
         return sortPolls(responses, sortBy);
     }
 
-    // Polls voted by user
+    // Polls voted by user (This will show that user's voted option and time not own, handle this presentation login in frontend)
     public List<PollWithVoteResponse> getPollsVotedByUser(Long userId, String sortBy) {
         List<Vote> votes = voteRepository.findByUserId(userId);
         List<Long> pollIds = votes.stream().map(Vote::getPollId).distinct().toList();
