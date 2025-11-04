@@ -1,12 +1,12 @@
 package com.example.CityPolling.controller;
 
+import com.example.CityPolling.dto.PollWithVoteResponse;
 import com.example.CityPolling.dto.UserPublicProfileResponse;
 import com.example.CityPolling.service.UserPublicProfileService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/profile")
@@ -22,5 +22,18 @@ public class UserPublicProfileController {
     public ResponseEntity<UserPublicProfileResponse> getUserProfile(@PathVariable Long userId) {
         UserPublicProfileResponse profile = userPublicProfileService.getUserPublicProfile(userId);
         return ResponseEntity.ok(profile);
+    }
+
+    // Get user's created polls
+    @GetMapping("/{userId}/polls-created")
+    public ResponseEntity<List<PollWithVoteResponse>> getPollsCreatedByUser(@PathVariable Long userId, @RequestParam(defaultValue = "latest") String sortBy) {
+        List<PollWithVoteResponse> polls = userPublicProfileService.getPollsCreatedByUser(userId, sortBy);
+        return ResponseEntity.ok(polls);
+    }
+    // Get user's voted polls
+    @GetMapping("/{userId}/polls-voted")
+    public ResponseEntity<List<PollWithVoteResponse>> getPollsVotedByUser(@PathVariable Long userId, @RequestParam(defaultValue = "latest") String sortBy) {
+        List<PollWithVoteResponse> polls = userPublicProfileService.getPollsVotedByUser(userId, sortBy);
+        return ResponseEntity.ok(polls);
     }
 }
