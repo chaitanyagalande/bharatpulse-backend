@@ -10,6 +10,7 @@ import com.example.CityPolling.repository.PollRepository;
 import com.example.CityPolling.repository.VoteRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -133,24 +134,45 @@ public class PollService {
         return sortPolls(responses, sortBy);
     }
 
-    // ✅ Edit poll
+    // ✅ Edit poll (Can only edit poll if poll is less than 5 mins old and no one has yet voted)
     public Poll editPoll(Long pollId, Poll updatedPoll, String email) {
         User user = userService.findByEmail(email);
+
         Poll poll = pollRepository.findById(pollId)
                 .orElseThrow(() -> new IllegalArgumentException("Poll not found"));
 
+        // Ensure only the creator can edit
         if (!poll.getCreatedBy().equals(user.getId())) {
             throw new IllegalArgumentException("You are not allowed to edit this poll.");
         }
 
+        // Ensure the poll is less than 5 minutes old
+        LocalDateTime now = LocalDateTime.now();
+        if (poll.getCreatedAt().isBefore(now.minusMinutes(5))) {
+            throw new IllegalArgumentException("Poll can only be edited within 5 minutes of creation.");
+        }
+
+        // Ensure no votes have been cast
+        long totalVotes = Optional.ofNullable(poll.getOptionOneVotes()).orElse(0L)
+                + Optional.ofNullable(poll.getOptionTwoVotes()).orElse(0L)
+                + Optional.ofNullable(poll.getOptionThreeVotes()).orElse(0L)
+                + Optional.ofNullable(poll.getOptionFourVotes()).orElse(0L);
+
+        if (totalVotes > 0) {
+            throw new IllegalArgumentException("Poll cannot be edited after votes have been cast.");
+        }
+
+        // ✅ Update fields safely
         poll.setQuestion(updatedPoll.getQuestion());
         poll.setOptionOne(updatedPoll.getOptionOne());
         poll.setOptionTwo(updatedPoll.getOptionTwo());
         poll.setOptionThree(updatedPoll.getOptionThree());
         poll.setOptionFour(updatedPoll.getOptionFour());
 
+        // Save and return — same pollId retained
         return pollRepository.save(poll);
     }
+
 
     // ✅ Delete poll
     public void deletePoll(Long pollId, String email) {
