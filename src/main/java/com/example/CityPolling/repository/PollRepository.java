@@ -9,4 +9,6 @@ public interface PollRepository extends JpaRepository<Poll, Long> {
     List<Poll> findByCityIgnoreCase(String city);
 
     List<Poll> findByCreatedBy(Long createdBy);
+
+    Long countByCreatedBy(Long userId);
 }
