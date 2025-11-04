@@ -81,4 +81,26 @@ public class VoteService {
             case 4 -> poll.setOptionFourVotes(poll.getOptionFourVotes() + delta);
         }
     }
+
+    public String removeVote(Long pollId, String email) {
+        User user = userService.findByEmail(email);
+        Poll poll = pollRepository.findById(pollId)
+                .orElseThrow(() -> new IllegalArgumentException("Poll not found."));
+
+        Optional<Vote> existingVoteOpt = voteRepository.findByPollIdAndUserId(pollId, user.getId());
+        if(existingVoteOpt.isEmpty()) {
+            return "You haven't voted on this poll.";
+        }
+
+        Vote existingVote = existingVoteOpt.get();
+        int oldOption = existingVote.getSelectedOption();
+
+        // Decrement that option's vote count
+        adjustVoteCounts(poll, oldOption, -1);
+
+        // Remove the vote record
+        voteRepository.delete(existingVote);
+        pollRepository.save(poll);
+        return "Your vote has been removed successfully.";
+    }
 }

@@ -22,4 +22,11 @@ public class VoteController {
         String message = voteService.castVote(vote, email);
         return ResponseEntity.ok(message);
     }
+
+    @DeleteMapping("/remove/{pollId}")
+    public ResponseEntity<?> removeVote(@PathVariable Long pollId, Authentication authentication) {
+        String email = authentication.getName();
+        String message = voteService.removeVote(pollId, email);
+        return ResponseEntity.ok(message);
+    }
 }
