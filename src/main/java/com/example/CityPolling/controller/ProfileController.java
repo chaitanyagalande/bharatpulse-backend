@@ -64,4 +64,12 @@ public class ProfileController {
         String mode = profileService.toggleMode(email);
         return ResponseEntity.ok("Mode updated to: " + mode);
     }
+
+    // Delete own account also remove polls created and votes registered
+    @DeleteMapping("/delete")
+    public ResponseEntity<?> deleteAccount(Authentication authentication) {
+        String email = authentication.getName();
+        profileService.deleteUserAccount(email);
+        return ResponseEntity.ok("User account and related data deleted successfully.");
+    }
 }
