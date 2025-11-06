@@ -1,9 +1,6 @@
 package com.example.CityPolling.service;
 
-import com.example.CityPolling.dto.CreatedByResponse;
-import com.example.CityPolling.dto.PollResponse;
-import com.example.CityPolling.dto.PollWithVoteResponse;
-import com.example.CityPolling.dto.UserPublicProfileResponse;
+import com.example.CityPolling.dto.*;
 import com.example.CityPolling.model.Poll;
 import com.example.CityPolling.model.User;
 import com.example.CityPolling.model.Vote;
@@ -53,15 +50,71 @@ public class UserPublicProfileService {
 
     // User Public Profile info
     public UserPublicProfileResponse getUserPublicProfile(Long userId) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
-        Long createdCount = pollRepository.countByCreatedBy(userId);
-        Long votedCount = voteRepository.countByUserId(userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        List<Poll> createdPolls = pollRepository.findByCreatedBy(userId);
+        List<Vote> votes = voteRepository.findByUserId(userId);
+
+        Long totalCreatedCount = (long) createdPolls.size();
+        Long totalVotedCount = (long) votes.size();
+        long totalActivity = totalCreatedCount + totalVotedCount;
+
+        Map<String, Long> createdCountMap = new HashMap<>();
+        Map<String, Long> votedCountMap = new HashMap<>();
+
+        // ✅ Aggregate created polls per city
+        for (Poll poll : createdPolls) {
+            if (poll.getCity() != null) {
+                createdCountMap.merge(poll.getCity(), 1L, Long::sum);
+            }
+        }
+
+        // ✅ Aggregate voted polls per city
+        if (!votes.isEmpty()) {
+            List<Long> votedPollIds = votes.stream()
+                    .map(Vote::getPollId)
+                    .toList();
+
+            List<Poll> votedPolls = pollRepository.findAllById(votedPollIds);
+            for (Poll poll : votedPolls) {
+                if (poll.getCity() != null) {
+                    votedCountMap.merge(poll.getCity(), 1L, Long::sum);
+                }
+            }
+        }
+
+        // ✅ Merge both maps and calculate percentage per city
+        Set<String> allCities = new HashSet<>();
+        allCities.addAll(createdCountMap.keySet());
+        allCities.addAll(votedCountMap.keySet());
+
+        List<CityActivityResponse> cityActivityList = allCities.stream()
+                .map(city -> {
+                    long created = createdCountMap.getOrDefault(city, 0L);
+                    long voted = votedCountMap.getOrDefault(city, 0L);
+                    long cityTotal = created + voted;
+
+                    double percentage = totalActivity > 0
+                            ? (cityTotal * 100.0 / totalActivity)
+                            : 0.0;
+
+                    return new CityActivityResponse(city, created, voted, percentage);
+                })
+                // Sort by total activity descending
+                .sorted((a, b) -> Long.compare(
+                        (b.getPollsCreatedCount() + b.getPollsVotedCount()),
+                        (a.getPollsCreatedCount() + a.getPollsVotedCount())
+                ))
+                .toList();
+
         return new UserPublicProfileResponse(
                 user.getId(),
                 user.getUsername(),
                 user.getCity(),
-                createdCount,
-                votedCount
+                totalCreatedCount,
+                totalVotedCount,
+                cityActivityList
         );
     }
 
