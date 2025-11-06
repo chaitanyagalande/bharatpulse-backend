@@ -9,6 +9,7 @@ import com.example.CityPolling.model.Vote;
 import com.example.CityPolling.repository.PollRepository;
 import com.example.CityPolling.repository.VoteRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -29,6 +30,22 @@ public class PollService {
     // ✅ Create poll
     public Poll createPoll(Poll poll, String email) {
         User user = userService.findByEmail(email);
+        // ✅ Must have at least 2 options
+        if (poll.getOptionOne() == null || poll.getOptionOne().isBlank() ||
+                poll.getOptionTwo() == null || poll.getOptionTwo().isBlank()) {
+            throw new IllegalArgumentException("Poll must have at least two options.");
+        }
+
+        // ✅ Normalize optional options (empty → null)
+        poll.setOptionThree(
+                (poll.getOptionThree() != null && !poll.getOptionThree().isBlank())
+                        ? poll.getOptionThree() : null
+        );
+        poll.setOptionFour(
+                (poll.getOptionFour() != null && !poll.getOptionFour().isBlank())
+                        ? poll.getOptionFour() : null
+        );
+
         poll.setCreatedBy(user.getId());
         poll.setCity(user.getCity());
         return pollRepository.save(poll);
@@ -162,19 +179,34 @@ public class PollService {
             throw new IllegalArgumentException("Poll cannot be edited after votes have been cast.");
         }
 
-        // ✅ Update fields safely
-        poll.setQuestion(updatedPoll.getQuestion());
-        poll.setOptionOne(updatedPoll.getOptionOne());
-        poll.setOptionTwo(updatedPoll.getOptionTwo());
-        poll.setOptionThree(updatedPoll.getOptionThree());
-        poll.setOptionFour(updatedPoll.getOptionFour());
+        // ✅ Validation: must have at least 2 options
+        if (updatedPoll.getOptionOne() == null || updatedPoll.getOptionOne().isBlank() ||
+                updatedPoll.getOptionTwo() == null || updatedPoll.getOptionTwo().isBlank()) {
+            throw new IllegalArgumentException("Poll must have at least two options.");
+        }
+
+        // ✅ Update + normalize in one go
+        poll.setQuestion(updatedPoll.getQuestion().trim());
+        poll.setOptionOne(updatedPoll.getOptionOne().trim());
+        poll.setOptionTwo(updatedPoll.getOptionTwo().trim());
+
+        // Normalize optional options (blank → null)
+        poll.setOptionThree(
+                (updatedPoll.getOptionThree() != null && !updatedPoll.getOptionThree().isBlank())
+                        ? updatedPoll.getOptionThree().trim() : null
+        );
+        poll.setOptionFour(
+                (updatedPoll.getOptionFour() != null && !updatedPoll.getOptionFour().isBlank())
+                        ? updatedPoll.getOptionFour().trim() : null
+        );
 
         // Save and return — same pollId retained
         return pollRepository.save(poll);
     }
 
 
-    // ✅ Delete poll
+    // ✅ Delete poll (Delete all votes of poll first then poll)
+    @Transactional
     public void deletePoll(Long pollId, String email) {
         User user = userService.findByEmail(email);
         Poll poll = pollRepository.findById(pollId)
@@ -184,6 +216,9 @@ public class PollService {
             throw new IllegalArgumentException("You are not allowed to delete this poll.");
         }
 
+        // Delete all votes related to this poll
+        voteRepository.deleteByPollId(pollId);
+        // Delete the poll itself
         pollRepository.deleteById(pollId);
     }
 
