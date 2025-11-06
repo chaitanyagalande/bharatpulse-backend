@@ -222,6 +222,39 @@ public class PollService {
         pollRepository.deleteById(pollId);
     }
 
+    // 🔍 Search polls by keyword within user's city
+    public List<PollWithVoteResponse> searchPolls(String query, String email, String sortBy) {
+        User user = userService.findByEmail(email);
+        String city = user.getCity();
+
+        if (query == null || query.trim().isEmpty()) {
+            throw new IllegalArgumentException("Search query cannot be empty.");
+        }
+
+        // ✅ Fetch polls filtered by city and keyword
+        List<Poll> polls = pollRepository.searchPollsByCityAndKeyword(city, query.trim());
+
+        // ✅ Get user's votes for marking voted options
+        List<Vote> userVotes = voteRepository.findByUserId(user.getId());
+        Map<Long, Vote> voteMap = userVotes.stream()
+                .collect(Collectors.toMap(Vote::getPollId, v -> v));
+
+        // ✅ Convert to PollWithVoteResponse
+        List<PollWithVoteResponse> responses = polls.stream()
+                .map(p -> {
+                    Vote v = voteMap.get(p.getId());
+                    return new PollWithVoteResponse(
+                            buildPollResponse(p),
+                            v != null ? v.getSelectedOption() : null,
+                            v != null ? v.getVotedAt() : null
+                    );
+                })
+                .toList();
+
+        // ✅ Sort and return
+        return sortPolls(responses, sortBy);
+    }
+
     // 🧮 Utility: total votes
     private long getTotalVotes(Poll poll) {
         return Optional.ofNullable(poll.getOptionOneVotes()).orElse(0L)

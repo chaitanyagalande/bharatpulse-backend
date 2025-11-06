@@ -70,4 +70,17 @@ public class PollController {
         pollService.deletePoll(pollId, email);
         return ResponseEntity.ok("Poll deleted successfully");
     }
+
+    // localhost:8080/api/polls/search?query=mumbai&sortBy=oldest (This is how url would be)
+    @GetMapping("/search")
+    public ResponseEntity<?> searchPolls(
+            @RequestParam String query,
+            @RequestParam(defaultValue = "latest") String sortBy,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+        List<PollWithVoteResponse> results = pollService.searchPolls(query, email, sortBy);
+        return ResponseEntity.ok(results);
+    }
+
 }
