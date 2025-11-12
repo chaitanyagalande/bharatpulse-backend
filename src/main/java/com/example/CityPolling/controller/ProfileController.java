@@ -62,7 +62,7 @@ public class ProfileController {
     public ResponseEntity<?> toggleMode(Authentication authentication) {
         String email = authentication.getName();
         String mode = profileService.toggleMode(email);
-        return ResponseEntity.ok("Mode updated to: " + mode);
+        return ResponseEntity.ok(mode);
     }
 
     // Delete own account also remove polls created and votes registered
