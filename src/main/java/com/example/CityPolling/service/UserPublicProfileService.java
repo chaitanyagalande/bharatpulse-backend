@@ -49,10 +49,14 @@ public class UserPublicProfileService {
     }
 
     // User Public Profile info
-    public UserPublicProfileResponse getUserPublicProfile(Long userId) {
-        User user = userRepository.findById(userId)
+    public UserPublicProfileResponse getUserPublicProfile(String username) {
+        // Fetch user by username instead of ID
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        Long userId = user.getId(); // We still need ID for lookups
+
+        // Fetch created and voted polls
         List<Poll> createdPolls = pollRepository.findByCreatedBy(userId);
         List<Vote> votes = voteRepository.findByUserId(userId);
 

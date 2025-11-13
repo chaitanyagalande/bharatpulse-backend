@@ -18,9 +18,9 @@ public class UserPublicProfileController {
     }
 
     // Get user's public profile
-    @GetMapping("/{userId}")
-    public ResponseEntity<UserPublicProfileResponse> getUserProfile(@PathVariable Long userId) {
-        UserPublicProfileResponse profile = userPublicProfileService.getUserPublicProfile(userId);
+    @GetMapping("/{username}")
+    public ResponseEntity<UserPublicProfileResponse> getUserProfile(@PathVariable String username) {
+        UserPublicProfileResponse profile = userPublicProfileService.getUserPublicProfile(username);
         return ResponseEntity.ok(profile);
     }
 
