@@ -18,18 +18,23 @@ public class UserPublicProfileService {
     private final PollRepository pollRepository;
     private final VoteRepository voteRepository;
     private final UserService userService;
+    private final TagService tagService;
 
-    public UserPublicProfileService(UserRepository userRepository, PollRepository pollRepository, VoteRepository voteRepository, UserService userService) {
+    public UserPublicProfileService(UserRepository userRepository, PollRepository pollRepository, VoteRepository voteRepository, UserService userService, TagService tagService) {
         this.userRepository = userRepository;
         this.pollRepository = pollRepository;
         this.voteRepository = voteRepository;
         this.userService = userService;
+        this.tagService = tagService;
     }
 
     // ✅ Build PollResponse (core helper)
     private PollResponse buildPollResponse(Poll poll) {
         User creator = userService.findById(poll.getCreatedBy());
         CreatedByResponse createdBy = new CreatedByResponse(creator.getId(), creator.getUsername());
+
+        // FETCH TAGS FOR THIS POLL
+        List<String> tagNames = tagService.getTagNamesForPoll(poll.getId());
 
         return new PollResponse(
                 poll.getId(),
@@ -44,7 +49,8 @@ public class UserPublicProfileService {
                 poll.getOptionOneVotes(),
                 poll.getOptionTwoVotes(),
                 poll.getOptionThreeVotes(),
-                poll.getOptionFourVotes()
+                poll.getOptionFourVotes(),
+                tagNames
         );
     }
 

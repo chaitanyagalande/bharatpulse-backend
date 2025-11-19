@@ -1,6 +1,7 @@
 package com.example.CityPolling.service;
 
 import com.example.CityPolling.dto.CreatedByResponse;
+import com.example.CityPolling.dto.PollEditRequest;
 import com.example.CityPolling.dto.PollResponse;
 import com.example.CityPolling.dto.PollWithVoteResponse;
 import com.example.CityPolling.model.Poll;
@@ -20,15 +21,17 @@ public class PollService {
     private final PollRepository pollRepository;
     private final UserService userService;
     private final VoteRepository voteRepository;
+    private final TagService tagService;
 
-    public PollService(PollRepository pollRepository, UserService userService, VoteRepository voteRepository) {
+    public PollService(PollRepository pollRepository, UserService userService, VoteRepository voteRepository, TagService tagService) {
         this.pollRepository = pollRepository;
         this.userService = userService;
         this.voteRepository = voteRepository;
+        this.tagService = tagService;
     }
 
     // ✅ Create poll
-    public Poll createPoll(Poll poll, String email) {
+    public Poll createPoll(Poll poll, List<String> tags, String email) {
         User user = userService.findByEmail(email);
         // ✅ Must have at least 2 options
         if (poll.getOptionOne() == null || poll.getOptionOne().isBlank() ||
@@ -48,13 +51,24 @@ public class PollService {
 
         poll.setCreatedBy(user.getId());
         poll.setCity(user.getCity());
-        return pollRepository.save(poll);
+
+        // save poll first
+        Poll savedPoll = pollRepository.save(poll);
+
+        // delegate tag logic to TagService
+        tagService.processTagsForPoll(tags, savedPoll);
+
+        return savedPoll;
     }
 
     // ✅ Build PollResponse (core helper)
     private PollResponse buildPollResponse(Poll poll) {
+        // Fetch Creator
         User creator = userService.findById(poll.getCreatedBy());
         CreatedByResponse createdBy = new CreatedByResponse(creator.getId(), creator.getUsername());
+
+        // FETCH TAGS FOR THIS POLL
+        List<String> tagNames = tagService.getTagNamesForPoll(poll.getId());
 
         return new PollResponse(
                 poll.getId(),
@@ -69,7 +83,8 @@ public class PollService {
                 poll.getOptionOneVotes(),
                 poll.getOptionTwoVotes(),
                 poll.getOptionThreeVotes(),
-                poll.getOptionFourVotes()
+                poll.getOptionFourVotes(),
+                tagNames // Add tag names in response
         );
     }
 
@@ -152,7 +167,8 @@ public class PollService {
     }
 
     // ✅ Edit poll (Can only edit poll if poll is less than 5 mins old and no one has yet voted)
-    public Poll editPoll(Long pollId, Poll updatedPoll, String email) {
+    // Cannot edit Tags during edit
+    public Poll editPoll(Long pollId, PollEditRequest updatedPoll, String email) {
         User user = userService.findByEmail(email);
 
         Poll poll = pollRepository.findById(pollId)
@@ -218,6 +234,10 @@ public class PollService {
 
         // Delete all votes related to this poll
         voteRepository.deleteByPollId(pollId);
+
+        // Ask TagService to cleanup tags + pollTag relations
+        tagService.deleteTagsForPoll(pollId);
+
         // Delete the poll itself
         pollRepository.deleteById(pollId);
     }
@@ -292,4 +312,42 @@ public class PollService {
         p.setOptionFourVotes(pr.getOptionFourVotes());
         return p;
     }
+
+    public List<PollWithVoteResponse> filterPolls(
+            List<String> tags,
+            String query,
+            String sortBy,
+            String email) {
+
+        User user = userService.findByEmail(email);
+        String city = user.getCity();
+
+        // 1️⃣ Guaranteed: tags is NOT empty because frontend ensures this
+        List<Poll> polls = pollRepository.findPollsByCityAndTags(city, tags, tags.size());
+
+        // 2️⃣ Keyword search on already-filtered polls
+        if (query != null && !query.isBlank()) {
+            String q = query.toLowerCase();
+            polls = polls.stream()
+                    .filter(p -> p.getQuestion().toLowerCase().contains(q))
+                    .toList();
+        }
+
+        // 3️⃣ Map user votes
+        Map<Long, Vote> voteMap = voteRepository.findByUserId(user.getId()).stream()
+                .collect(Collectors.toMap(Vote::getPollId, v -> v));
+
+        // 4️⃣ Convert to PollWithVoteResponse
+        List<PollWithVoteResponse> responses = polls.stream()
+                .map(p -> new PollWithVoteResponse(
+                        buildPollResponse(p),
+                        voteMap.containsKey(p.getId()) ? voteMap.get(p.getId()).getSelectedOption() : null,
+                        voteMap.containsKey(p.getId()) ? voteMap.get(p.getId()).getVotedAt() : null
+                ))
+                .toList();
+
+        // 5️⃣ Sort results
+        return sortPolls(responses, sortBy);
+    }
+
 }

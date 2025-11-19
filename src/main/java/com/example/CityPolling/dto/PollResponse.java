@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -24,4 +25,5 @@ public class PollResponse {
     private Long optionTwoVotes;
     private Long optionThreeVotes;
     private Long optionFourVotes;
+    private List<String> tags;
 }
