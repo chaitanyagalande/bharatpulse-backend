@@ -21,12 +21,14 @@ public class ProfileService {
     private final BCryptPasswordEncoder passwordEncoder;
     private final PollRepository pollRepository;
     private final VoteRepository voteRepository;
+    private final TagService tagService;
 
-    public ProfileService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, PollRepository pollRepository, VoteRepository voteRepository) {
+    public ProfileService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, PollRepository pollRepository, VoteRepository voteRepository, TagService tagService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.pollRepository = pollRepository;
         this.voteRepository = voteRepository;
+        this.tagService = tagService;
     }
 
     public User getCurrentUser(String email) {
@@ -95,8 +97,13 @@ public class ProfileService {
         // Delete all polls created by the user
         List<Poll> polls = pollRepository.findByCreatedBy(user.getId());
         for (Poll poll : polls) {
-            // Delete all votes in this poll
+            // FIRST → delete tags for this poll
+            tagService.deleteTagsForPoll(poll.getId());
+
+            // Delete all votes inside this poll
             voteRepository.deleteByPollId(poll.getId());
+
+            // Finally delete the poll
             pollRepository.delete(poll);
         }
 
