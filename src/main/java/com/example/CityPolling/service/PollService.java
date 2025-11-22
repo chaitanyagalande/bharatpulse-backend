@@ -7,6 +7,7 @@ import com.example.CityPolling.dto.PollWithVoteResponse;
 import com.example.CityPolling.model.Poll;
 import com.example.CityPolling.model.User;
 import com.example.CityPolling.model.Vote;
+import com.example.CityPolling.repository.CommentRepository;
 import com.example.CityPolling.repository.PollRepository;
 import com.example.CityPolling.repository.VoteRepository;
 import org.springframework.stereotype.Service;
@@ -22,12 +23,14 @@ public class PollService {
     private final UserService userService;
     private final VoteRepository voteRepository;
     private final TagService tagService;
+    private final CommentRepository commentRepository;
 
-    public PollService(PollRepository pollRepository, UserService userService, VoteRepository voteRepository, TagService tagService) {
+    public PollService(PollRepository pollRepository, UserService userService, VoteRepository voteRepository, TagService tagService, CommentRepository commentRepository) {
         this.pollRepository = pollRepository;
         this.userService = userService;
         this.voteRepository = voteRepository;
         this.tagService = tagService;
+        this.commentRepository = commentRepository;
     }
 
     // ✅ Create poll
@@ -70,6 +73,9 @@ public class PollService {
         // FETCH TAGS FOR THIS POLL
         List<String> tagNames = tagService.getTagNamesForPoll(poll.getId());
 
+        // FETCH NUMBER OF COMMENTS ON THIS POLL
+        long commentCount = commentRepository.countByPollId(poll.getId());
+
         return new PollResponse(
                 poll.getId(),
                 poll.getQuestion(),
@@ -84,7 +90,8 @@ public class PollService {
                 poll.getOptionTwoVotes(),
                 poll.getOptionThreeVotes(),
                 poll.getOptionFourVotes(),
-                tagNames // Add tag names in response
+                tagNames, // Add tag names in response
+                commentCount
         );
     }
 
@@ -237,6 +244,9 @@ public class PollService {
 
         // Ask TagService to cleanup tags + pollTag relations
         tagService.deleteTagsForPoll(pollId);
+
+        // Delete all comments on that poll
+        commentRepository.deleteByPollId(pollId);
 
         // Delete the poll itself
         pollRepository.deleteById(pollId);

@@ -26,4 +26,5 @@ public class PollResponse {
     private Long optionThreeVotes;
     private Long optionFourVotes;
     private List<String> tags;
+    private long commentCount;
 }

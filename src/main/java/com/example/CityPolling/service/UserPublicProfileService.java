@@ -4,6 +4,7 @@ import com.example.CityPolling.dto.*;
 import com.example.CityPolling.model.Poll;
 import com.example.CityPolling.model.User;
 import com.example.CityPolling.model.Vote;
+import com.example.CityPolling.repository.CommentRepository;
 import com.example.CityPolling.repository.PollRepository;
 import com.example.CityPolling.repository.UserRepository;
 import com.example.CityPolling.repository.VoteRepository;
@@ -19,13 +20,15 @@ public class UserPublicProfileService {
     private final VoteRepository voteRepository;
     private final UserService userService;
     private final TagService tagService;
+    private final CommentRepository commentRepository;
 
-    public UserPublicProfileService(UserRepository userRepository, PollRepository pollRepository, VoteRepository voteRepository, UserService userService, TagService tagService) {
+    public UserPublicProfileService(UserRepository userRepository, PollRepository pollRepository, VoteRepository voteRepository, UserService userService, TagService tagService, CommentRepository commentRepository) {
         this.userRepository = userRepository;
         this.pollRepository = pollRepository;
         this.voteRepository = voteRepository;
         this.userService = userService;
         this.tagService = tagService;
+        this.commentRepository = commentRepository;
     }
 
     // ✅ Build PollResponse (core helper)
@@ -35,6 +38,9 @@ public class UserPublicProfileService {
 
         // FETCH TAGS FOR THIS POLL
         List<String> tagNames = tagService.getTagNamesForPoll(poll.getId());
+
+        // FETCH NUMBER OF COMMENTS ON THIS POLL
+        long commentCount = commentRepository.countByPollId(poll.getId());
 
         return new PollResponse(
                 poll.getId(),
@@ -50,7 +56,8 @@ public class UserPublicProfileService {
                 poll.getOptionTwoVotes(),
                 poll.getOptionThreeVotes(),
                 poll.getOptionFourVotes(),
-                tagNames
+                tagNames,
+                commentCount
         );
     }
 

@@ -98,3 +98,26 @@ CREATE TABLE VOTE (
         FOREIGN KEY (user_id)
         REFERENCES USERS(id)
 );
+
+-- ===========================================
+-- COMMENT TABLE
+-- ===========================================
+CREATE TABLE COMMENT (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+    content VARCHAR(300) NOT NULL,
+
+    poll_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_comment_poll
+        FOREIGN KEY (poll_id)
+        REFERENCES POLL(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_comment_user
+        FOREIGN KEY (user_id)
+        REFERENCES USERS(id)
+);

@@ -6,6 +6,7 @@ import com.example.CityPolling.dto.UsernameUpdateRequest;
 import com.example.CityPolling.model.Poll;
 import com.example.CityPolling.model.User;
 import com.example.CityPolling.model.Vote;
+import com.example.CityPolling.repository.CommentRepository;
 import com.example.CityPolling.repository.PollRepository;
 import com.example.CityPolling.repository.UserRepository;
 import com.example.CityPolling.repository.VoteRepository;
@@ -22,13 +23,15 @@ public class ProfileService {
     private final PollRepository pollRepository;
     private final VoteRepository voteRepository;
     private final TagService tagService;
+    private final CommentRepository commentRepository;
 
-    public ProfileService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, PollRepository pollRepository, VoteRepository voteRepository, TagService tagService) {
+    public ProfileService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, PollRepository pollRepository, VoteRepository voteRepository, TagService tagService, CommentRepository commentRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.pollRepository = pollRepository;
         this.voteRepository = voteRepository;
         this.tagService = tagService;
+        this.commentRepository = commentRepository;
     }
 
     public User getCurrentUser(String email) {
@@ -93,22 +96,30 @@ public class ProfileService {
     @Transactional
     public void deleteUserAccount(String email) {
         User user = userRepository.findByEmail(email);
+        Long userId = user.getId();
+        // Delete all comments DONE BY THE USER
+        commentRepository.deleteByUserId(userId);
 
-        // Delete all polls created by the user
-        List<Poll> polls = pollRepository.findByCreatedBy(user.getId());
+        // Find all polls created by the user
+        List<Poll> polls = pollRepository.findByCreatedBy(userId);
         for (Poll poll : polls) {
-            // FIRST → delete tags for this poll
-            tagService.deleteTagsForPoll(poll.getId());
+            Long pollId = poll.getId();
 
-            // Delete all votes inside this poll
-            voteRepository.deleteByPollId(poll.getId());
+            // 1 Delete all comments ON THIS POLL
+            commentRepository.deleteByPollId(pollId);
 
-            // Finally delete the poll
+            // 2 Delete tags for this poll
+            tagService.deleteTagsForPoll(pollId);
+
+            // 3 Delete all votes inside this poll
+            voteRepository.deleteByPollId(pollId);
+
+            // 4 Delete the actual poll
             pollRepository.delete(poll);
         }
 
-        // Delete all votes made by this user
-        List<Vote> votes = voteRepository.findByUserId(user.getId());
+        // Delete all votes made BY the user
+        List<Vote> votes = voteRepository.findByUserId(userId);
         for (Vote vote : votes) {
             Poll poll = pollRepository.findById(vote.getPollId()).orElse(null);
             if (poll != null) {
@@ -116,11 +127,12 @@ public class ProfileService {
                 pollRepository.save(poll);
             }
         }
-        voteRepository.deleteByUserId(user.getId());
+        voteRepository.deleteByUserId(userId);
 
-        // Delete user itself
+        // Finally delete the user
         userRepository.delete(user);
     }
+
 
     private void adjustVoteCounts(Poll poll, int option, int delta) {
         switch (option) {
