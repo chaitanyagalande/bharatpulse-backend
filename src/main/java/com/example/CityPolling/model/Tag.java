@@ -8,7 +8,7 @@ import lombok.*;
 @NoArgsConstructor
 @Entity
 @Table(
-        name = "TAG",
+        name = "tag",
         uniqueConstraints = {
                 @UniqueConstraint(columnNames = {"name", "city"})  // ensures unique tag per city
         }
@@ -16,17 +16,16 @@ import lombok.*;
 
 // Represents one unique tag (per city).
 public class Tag {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "name", nullable = false, length = 100)  // ✅ explicit lowercase
     private String name;
 
-    @Column(nullable = false, length = 100)
+    @Column(name = "city", nullable = false, length = 100)  // ✅ explicit lowercase
     private String city;
 
-    @Column(nullable = false)
+    @Column(name = "usage_count", nullable = false)  // ✅ snake_case for column name
     private Long usageCount = 0L;
 }

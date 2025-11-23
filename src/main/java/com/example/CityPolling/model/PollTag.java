@@ -7,7 +7,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "POLL_TAG")
+@Table(name = "poll_tag")
 
 // This connects Poll ↔ Tag (many-to-many through mapping entity).
 public class PollTag {
