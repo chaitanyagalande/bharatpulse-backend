@@ -5,6 +5,7 @@ import com.example.CityPolling.dto.PasswordUpdateRequest;
 import com.example.CityPolling.dto.UsernameUpdateRequest;
 import com.example.CityPolling.model.User;
 import com.example.CityPolling.service.ProfileService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +30,7 @@ public class ProfileController {
 
     // Update logged-in user's city
     @PutMapping("/update-city")
-    public ResponseEntity<?> updateCity(@RequestBody CityRequest req, Authentication authentication) {
+    public ResponseEntity<?> updateCity(@Valid @RequestBody CityRequest req, Authentication authentication) {
         String email = authentication.getName();
         User updatedUser = profileService.updateCity(req, email);
         return ResponseEntity.ok("City updated successfully to: " + updatedUser.getCity());
@@ -37,7 +38,7 @@ public class ProfileController {
 
     // Change password after logging in
     @PatchMapping("/update-password")
-    public ResponseEntity<?> updatePassword(@RequestBody PasswordUpdateRequest req, Authentication authentication) {
+    public ResponseEntity<?> updatePassword(@Valid @RequestBody PasswordUpdateRequest req, Authentication authentication) {
         String email = authentication.getName();
         boolean updated = profileService.updatePassword(req, email);
         if(!updated) {
@@ -48,7 +49,7 @@ public class ProfileController {
 
     // Change username after logging in
     @PatchMapping("/update-username")
-    public ResponseEntity<?> updateUsername(@RequestBody UsernameUpdateRequest req, Authentication authentication) {
+    public ResponseEntity<?> updateUsername(@Valid @RequestBody UsernameUpdateRequest req, Authentication authentication) {
         String email = authentication.getName();
         boolean updated = profileService.updateUsername(req, email);
         if(!updated) {

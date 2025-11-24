@@ -3,6 +3,7 @@ package com.example.CityPolling.controller;
 import com.example.CityPolling.dto.CommentRequest;
 import com.example.CityPolling.dto.CommentResponse;
 import com.example.CityPolling.service.CommentService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -19,7 +20,7 @@ public class CommentController {
 
     // Add comment
     @PostMapping("/polls/{pollId}/comments")
-    public ResponseEntity<CommentResponse> addComment(@PathVariable Long pollId, @RequestBody CommentRequest req, Authentication authentication) {
+    public ResponseEntity<CommentResponse> addComment(@PathVariable Long pollId, @Valid @RequestBody CommentRequest req, Authentication authentication) {
         String email = authentication.getName();
         CommentResponse response = commentService.addComment(pollId, req.getContent(), email);
         return ResponseEntity.ok(response);

@@ -64,7 +64,9 @@ public class UserPublicProfileService {
     // User Public Profile info
     public UserPublicProfileResponse getUserPublicProfile(String username) {
         // Fetch user by username instead of ID
-        User user = userRepository.findByUsername(username)
+        // ✅ Convert to lowercase for lookup
+        String normalizedUsername = username.toLowerCase().trim();
+        User user = userRepository.findByUsername(normalizedUsername)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Long userId = user.getId(); // We still need ID for lookups

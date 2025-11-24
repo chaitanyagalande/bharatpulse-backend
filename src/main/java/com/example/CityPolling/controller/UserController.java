@@ -7,6 +7,7 @@ import com.example.CityPolling.model.User;
 import com.example.CityPolling.repository.UserRepository;
 import com.example.CityPolling.security.JwtUtil;
 import com.example.CityPolling.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +23,7 @@ public class UserController {
 
     // Register endpoint
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest req) {
         User savedUser = userService.register(req);
         savedUser.setPassword(null);
         return ResponseEntity.ok(savedUser);
@@ -30,7 +31,7 @@ public class UserController {
 
     // Login endpoint
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest req) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest req) {
         LoginResponse response = userService.login(req);
         return ResponseEntity.ok(response);
     }

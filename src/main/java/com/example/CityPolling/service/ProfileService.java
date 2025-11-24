@@ -35,7 +35,7 @@ public class ProfileService {
     }
 
     public User getCurrentUser(String email) {
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmail(email.toLowerCase().trim());
         if(user == null) {
             throw new IllegalStateException("Authenticated user not found in DB");
         }
@@ -44,18 +44,19 @@ public class ProfileService {
     }
 
     public User updateCity(CityRequest request, String email) {
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmail(email.toLowerCase().trim());
         if(user == null) {
             throw new IllegalStateException("Authenticated user not found in DB");
         }
-        user.setCity(request.getCity());
+        // ✅ Convert city to lowercase
+        user.setCity(request.getCity().toLowerCase().trim());
         userRepository.save(user);
         user.setPassword(null); // hide password before returning
         return user;
     }
 
     public boolean updatePassword(PasswordUpdateRequest req, String email) {
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmail(email.toLowerCase().trim());
         if(user == null) {
             throw new IllegalStateException("Authenticated user not found in DB");
         }
@@ -69,20 +70,22 @@ public class ProfileService {
     }
 
     public boolean updateUsername(UsernameUpdateRequest request, String email) {
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmail(email.toLowerCase().trim());
         if(user == null) {
             throw new IllegalStateException("Authenticated user not found in DB");
         }
-        if (userRepository.existsByUsername(request.getNewUsername())) {
+        // ✅ Convert to lowercase for uniqueness check
+        String normalizedUsername = request.getNewUsername().toLowerCase().trim();
+        if (userRepository.existsByUsername(normalizedUsername)) {
             return false; // username already taken
         }
-        user.setUsername(request.getNewUsername());
+        user.setUsername(normalizedUsername);
         userRepository.save(user);
         return true;
     }
 
     public String toggleMode(String email) {
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmail(email.toLowerCase().trim());
         String currentMode = user.getMode();
         if ("LOCAL".equalsIgnoreCase(currentMode)) {
             user.setMode("EXPLORE");
@@ -95,7 +98,7 @@ public class ProfileService {
 
     @Transactional
     public void deleteUserAccount(String email) {
-        User user = userRepository.findByEmail(email);
+        User user = userRepository.findByEmail(email.toLowerCase().trim());
         Long userId = user.getId();
         // Delete all comments DONE BY THE USER
         commentRepository.deleteByUserId(userId);

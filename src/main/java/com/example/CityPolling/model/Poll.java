@@ -1,6 +1,8 @@
 package com.example.CityPolling.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -18,18 +20,26 @@ public class Poll {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Question is required")
+    @Size(min = 5, max = 255, message = "Question must be between 5 and 255 characters")
     @Column(name = "question", nullable = false, length = 255)
     private String question;
 
+    @NotBlank(message = "Option 1 is required")
+    @Size(max = 100, message = "Option 1 must not exceed 100 characters")
     @Column(name = "option_one", nullable = false, length = 100)
     private String optionOne;
 
+    @NotBlank(message = "Option 2 is required")
+    @Size(max = 100, message = "Option 2 must not exceed 100 characters")
     @Column(name = "option_two", nullable = false, length = 100)
     private String optionTwo;
 
+    @Size(max = 100, message = "Option 3 must not exceed 100 characters")
     @Column(name = "option_three", length = 100)
     private String optionThree;
 
+    @Size(max = 100, message = "Option 4 must not exceed 100 characters")
     @Column(name = "option_four", length = 100)
     private String optionFour;
 

@@ -22,25 +22,32 @@ public class UserService {
     }
 
     public User register(RegisterRequest req) {
-        if (userRepository.existsByUsername(req.getUsername())) {
+        String normalizedUsername = req.getUsername().toLowerCase().trim();
+        String normalizedEmail = req.getEmail().toLowerCase().trim();
+        String normalizedCity = req.getCity().toLowerCase().trim();
+
+        if (userRepository.existsByUsername(normalizedUsername)) {
             throw new IllegalArgumentException("Username already in use");
         }
-        if (userRepository.existsByEmail(req.getEmail())) {
+        if (userRepository.existsByEmail(normalizedEmail)) {
             throw new IllegalArgumentException("Email already in use");
         }
         User user = new User();
-        user.setUsername(req.getUsername());
-        user.setEmail(req.getEmail());
+        user.setUsername(normalizedUsername);
+        user.setEmail(normalizedEmail);
         String hashed = passwordEncoder.encode(req.getPassword());
         user.setPassword(hashed);
-        user.setCity(req.getCity());
+        user.setCity(normalizedCity);
         user.setRole("USER");
         return userRepository.save(user);
     }
 
     // Needed when login needs to be done
     public LoginResponse login(LoginRequest req) {
-        User user = userRepository.findByEmail(req.getEmail());
+        // ✅ Normalize email to lowercase for lookup
+        String normalizedEmail = req.getEmail().toLowerCase().trim();
+
+        User user = userRepository.findByEmail(normalizedEmail);
         if(user == null) {
             throw new IllegalArgumentException("Invalid email or password.");
         }
@@ -54,11 +61,13 @@ public class UserService {
     }
 
     public boolean existsByEmail(String email) {
-        return userRepository.existsByEmail(email);
+        // ✅ Normalize email to lowercase for check
+        return userRepository.existsByEmail(email.toLowerCase().trim());
     }
 
     public User findByEmail(String email) {
-        return userRepository.findByEmail(email);
+        // ✅ Normalize email to lowercase for lookup
+        return userRepository.findByEmail(email.toLowerCase().trim());
     }
 
     public User findById(Long createdBy) {

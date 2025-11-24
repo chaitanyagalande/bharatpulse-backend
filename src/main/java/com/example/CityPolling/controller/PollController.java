@@ -6,6 +6,7 @@ import com.example.CityPolling.dto.PollWithVoteResponse;
 import com.example.CityPolling.model.Poll;
 import com.example.CityPolling.service.PollService;
 import com.example.CityPolling.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +24,7 @@ public class PollController {
     // Create a new poll (JWT protected)
     // DONE WITH TAG MODIFICATION
     @PostMapping("/create")
-    public ResponseEntity<?> createPoll(@RequestBody PollCreateRequest poll, Authentication authentication) {
+    public ResponseEntity<?> createPoll(@Valid @RequestBody PollCreateRequest poll, Authentication authentication) {
         String email = authentication.getName(); // email stored as name in token
         Poll savedPoll = pollService.createPoll(poll.getPoll(), poll.getTags(), email);
         return ResponseEntity.ok(savedPoll);
@@ -62,7 +63,7 @@ public class PollController {
     // Edit a poll (Only the creator can)
     // DONE WITH TAG MODIFICATION
     @PutMapping("/edit/{pollId}")
-    public ResponseEntity<?> editPoll(@PathVariable Long pollId, @RequestBody PollEditRequest updatedPoll, Authentication authentication) {
+    public ResponseEntity<?> editPoll(@PathVariable Long pollId, @Valid @RequestBody PollEditRequest updatedPoll, Authentication authentication) {
         // Get the user currently logged in
         String email = authentication.getName();
         Poll savedPoll = pollService.editPoll(pollId, updatedPoll, email);

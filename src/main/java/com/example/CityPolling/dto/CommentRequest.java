@@ -1,5 +1,7 @@
 package com.example.CityPolling.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,5 +10,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CommentRequest {
+    @NotBlank(message = "Comment content is required")
+    @Size(min = 1, max = 500, message = "Comment must be between 1 and 500 characters")
     String content;
 }
