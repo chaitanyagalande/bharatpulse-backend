@@ -1,12 +1,14 @@
 package com.example.CityPolling.security;
 
-
 import com.example.CityPolling.service.UserService;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -15,42 +17,58 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-// Acts like Middleware
-// Checks every request for a Token, if token present it validates it, if absent or fake the request is rejected
-// Controller runs only after passing this filter
 @Component
 public class JwtFilter extends OncePerRequestFilter {
+
     private final JwtUtil jwtUtil;
-    private final UserService userService; // makes use of UserService method of findByEmail
+    private final UserService userService;
 
     public JwtFilter(JwtUtil jwtUtil, @Lazy UserService userService) {
         this.jwtUtil = jwtUtil;
         this.userService = userService;
     }
+
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain chain)
             throws ServletException, IOException {
 
-        final String header = request.getHeader("Authorization");
-        String email = null, token = null;
+        final String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        if (header != null && header.startsWith("Bearer ")) { // If Token present in request
-            token = header.substring(7); // Extract token from request
-            email = jwtUtil.extractEmail(token); // Extract email from token
+        String email = null;
+        String token = null;
+
+        // ✅ Extract token safely
+        if (header != null && header.startsWith("Bearer ")) {
+            token = header.substring(7);
+            try {
+                email = jwtUtil.extractEmail(token);
+            } catch (ExpiredJwtException e) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Token expired");
+                return;
+            } catch (JwtException e) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
+                return;
+            }
         }
 
+        // ✅ Validate user + set authentication
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            boolean userExists = userService.existsByEmail(email);
-            if (userExists) {
+
+            if (userService.existsByEmail(email)) {
+
                 UsernamePasswordAuthenticationToken authToken =
                         new UsernamePasswordAuthenticationToken(email, null, null);
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken); // Request is authenticated successfully
+
+                authToken.setDetails(
+                        new WebAuthenticationDetailsSource().buildDetails(request)
+                );
+
+                SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
 
         chain.doFilter(request, response);
-        // Passes control to the next filter in the chain, and eventually to the servlet/controller that handles the request.
     }
-
 }
