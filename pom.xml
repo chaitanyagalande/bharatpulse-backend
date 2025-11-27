@@ -9,10 +9,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.example</groupId>
-	<artifactId>CityPolling</artifactId>
+	<artifactId>bharatpulse-backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>CityPolling</name>
-	<description>CityPolling backend using Spring Boot.</description>
+	<name>BharatPulse Backend</name>
+	<description>BharatPulse backend using Spring Boot.</description>
 	<url/>
 	<licenses>
 		<license/>
