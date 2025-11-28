@@ -43,6 +43,7 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/register",
                                 "/actuator/health",   // For Render health checks
+                                "/health", // For Render health checks
                                 "/error"
                         ).permitAll()
 
